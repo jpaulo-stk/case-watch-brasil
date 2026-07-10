@@ -1,0 +1,31 @@
+{
+  "name": "back-end",
+  "packageManager": "yarn@4.6.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "typeorm": "tsx ./node_modules/typeorm/cli.js",
+    "migration:generate": "yarn typeorm migration:generate -d ./src/config/data-source.ts ./src/migrations/InitSchema",
+    "migration:run": "yarn typeorm migration:run -d ./src/config/data-source.ts",
+    "migration:revert": "yarn typeorm migration:revert -d ./src/config/data-source.ts"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.0",
+    "tsx": "^4.20.0",
+    "typescript": "5"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.22.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^1.0.0"
+  }
+}
