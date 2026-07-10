@@ -14,3 +14,7 @@ export class ConflictError extends AppError {
 export class NotFoundError extends AppError {
   readonly statusCode = 404;
 }
+
+export class UnauthorizedError extends AppError {
+  readonly statusCode = 401;
+}

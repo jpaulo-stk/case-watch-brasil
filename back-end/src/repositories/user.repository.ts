@@ -1,7 +1,7 @@
 import { AppDataSource } from "../config/data-source.ts";
 import { User } from "../entities/user.entity.ts";
 
-export const userRepository = AppDataSource.getRepository(User).extend({
+export const UserRepository = AppDataSource.getRepository(User).extend({
   findById(id: number): Promise<User | null> {
     return this.findOne({ where: { id } });
   },
