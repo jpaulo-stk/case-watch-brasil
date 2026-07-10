@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { UsersRepository } from "../repositories/users.repository.ts";
-import type { CreateUserDTO } from "../dto/user.dto.ts";
+import type { CreateUserDTO } from "../schemas/user.schema.ts";
 import { ConflictError, NotFoundError } from "../errors/http-errors.ts";
 import type { User } from "../entities/user.entity.ts";
 

@@ -4,11 +4,14 @@ import { errorHandler } from "./middlewares/error.middleware.ts";
 import { authRoutes } from "./routes/auth.routes.ts";
 import { categoryRoutes } from "./routes/categories.routes.ts";
 import { tasksRoutes } from "./routes/tasks.routes.ts";
+import swaggerUi from "swagger-ui-express";
+import { buildOpenApiDoc } from "./config/openapi.ts";
 
 const app: Express = express();
 
 app.use(express.json());
 
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(buildOpenApiDoc()));
 app.use("/users", userRoutes);
 app.use("/auth", authRoutes);
 app.use("/categories", categoryRoutes);

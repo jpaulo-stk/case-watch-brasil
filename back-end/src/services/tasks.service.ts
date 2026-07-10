@@ -1,4 +1,3 @@
-import type { CreateTaskDTO } from "../dto/task.dto.ts";
 import type { Category } from "../entities/category.entity.ts";
 import { TasksRepository } from "../repositories/tasks.repository.ts";
 import {
@@ -7,22 +6,18 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "../errors/http-errors.ts";
-import {
-  Task,
-  TASK_STATUSES,
-  type TaskStatus,
-} from "../entities/task.entity.ts";
+import { Task, type TaskStatus } from "../entities/task.entity.ts";
 import { UserHasTasksRepository } from "../repositories/user-has-tasks.repository.ts";
 import { UsersRepository } from "../repositories/users.repository.ts";
 import {
-  COLLABORATOR_ROLES,
   UserHasTasks,
   type CollaboratorRole,
 } from "../entities/user-has-tasks.entity.ts";
+import type { CreateTaskDTO, UpdateTaskDTO } from "../schemas/task.schema.ts";
 
 export class TasksService {
   private async assertCanView(task: Task, userId: number): Promise<void> {
-    if (task.user.id === userId) return; // dono vê sempre
+    if (task.user.id === userId) return;
     const collab = await UserHasTasksRepository.findOne({
       where: { task: { id: task.id }, user: { id: userId } },
     });
@@ -32,7 +27,7 @@ export class TasksService {
   }
 
   private async assertCanEdit(task: Task, userId: number): Promise<void> {
-    if (task.user.id === userId) return; // dono edita sempre
+    if (task.user.id === userId) return;
     const collab = await UserHasTasksRepository.findOne({
       where: { task: { id: task.id }, user: { id: userId } },
     });
@@ -89,7 +84,7 @@ export class TasksService {
 
   async updateTask(
     id: number,
-    data: Partial<CreateTaskDTO>,
+    data: Partial<UpdateTaskDTO>,
     userId: number,
   ): Promise<Task> {
     const task = await TasksRepository.findById(id);
@@ -113,12 +108,6 @@ export class TasksService {
     status: string,
     userId: number,
   ): Promise<Task> {
-    if (!(TASK_STATUSES as readonly string[]).includes(status)) {
-      throw new BadRequestError(
-        `Invalid status. Must be one of: ${TASK_STATUSES.join(", ")}`,
-      );
-    }
-
     const task = await TasksRepository.findById(id);
     if (!task) {
       throw new NotFoundError("Task not found");
@@ -129,7 +118,6 @@ export class TasksService {
     return await TasksRepository.save(task);
   }
 
-  // Deletar é só do dono (ação destrutiva).
   async deleteTask(id: number, userId: number): Promise<void> {
     const task = await TasksRepository.findById(id);
     if (!task) {
@@ -148,12 +136,6 @@ export class TasksService {
     role: string,
     ownerId: number,
   ): Promise<void> {
-    if (!(COLLABORATOR_ROLES as readonly string[]).includes(role)) {
-      throw new BadRequestError(
-        `Invalid role. Must be one of: ${COLLABORATOR_ROLES.join(", ")}`,
-      );
-    }
-
     const task = await TasksRepository.findById(taskId);
     if (!task) {
       throw new NotFoundError("Task not found");
