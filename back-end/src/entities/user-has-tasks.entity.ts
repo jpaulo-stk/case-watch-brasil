@@ -8,7 +8,8 @@ import {
 import { User } from "./user.entity.ts";
 import { Task } from "./task.entity.ts";
 
-export type CollaboratorRole = "viewer" | "editor";
+export const COLLABORATOR_ROLES = ["viewer", "editor"] as const;
+export type CollaboratorRole = (typeof COLLABORATOR_ROLES)[number];
 
 @Entity()
 export class UserHasTasks {
@@ -18,7 +19,7 @@ export class UserHasTasks {
   @PrimaryColumn({ name: "task_id", type: "int" })
   taskId!: number;
 
-  @Column({ type: "enum", enum: ["viewer", "editor"], default: "viewer" })
+  @Column({ type: "enum", enum: [...COLLABORATOR_ROLES], default: "viewer" })
   role!: CollaboratorRole;
 
   @ManyToOne(() => User)

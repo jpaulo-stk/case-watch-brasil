@@ -63,4 +63,41 @@ export class TasksController {
     await tasksService.deleteTask(Number(req.params.id), req.user.id);
     res.status(204).send();
   }
+
+  async addCollaborator(req: Request, res: Response) {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { userId, role } = req.body;
+    await tasksService.addCollaborator(
+      Number(req.params.id),
+      userId,
+      role,
+      req.user.id,
+    );
+    res.status(201).send();
+  }
+
+  async getCollaborators(req: Request, res: Response) {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const collaborators = await tasksService.getCollaborators(
+      Number(req.params.id),
+      req.user.id,
+    );
+    res.status(200).json(collaborators);
+  }
+
+  async removeCollaborator(req: Request, res: Response) {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    await tasksService.removeCollaborator(
+      Number(req.params.id),
+      Number(req.params.collaboratorId),
+      req.user.id,
+    );
+    res.status(204).send();
+  }
 }
