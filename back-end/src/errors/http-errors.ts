@@ -18,3 +18,11 @@ export class NotFoundError extends AppError {
 export class UnauthorizedError extends AppError {
   readonly statusCode = 401;
 }
+
+export class ForbiddenError extends AppError {
+  readonly statusCode = 403;
+}
+
+export class BadRequestError extends AppError {
+  readonly statusCode = 400;
+}

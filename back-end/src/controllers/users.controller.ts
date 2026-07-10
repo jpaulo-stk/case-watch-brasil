@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
-import { UserService } from "../services/user.service.ts";
+import { UsersService } from "../services/users.service.ts";
 import { NotFoundError } from "../errors/http-errors.ts";
 
-const userService = new UserService();
+const userService = new UsersService();
 
-export class UserController {
+export class UsersController {
   async create(req: Request, res: Response) {
     const { passwordHash, ...rest } = await userService.create(req.body);
     res.status(201).json(rest);

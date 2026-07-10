@@ -11,7 +11,14 @@ import {
 import { User } from "./user.entity.ts";
 import { Category } from "./category.entity.ts";
 
-export type TaskStatus = "pending" | "in_progress" | "review" | "done";
+export const TASK_STATUSES = [
+  "pending",
+  "in_progress",
+  "review",
+  "done",
+] as const;
+
+export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 @Entity()
 export class Task {
@@ -26,7 +33,7 @@ export class Task {
 
   @Column({
     type: "enum",
-    enum: ["pending", "in_progress", "review", "done"],
+    enum: [...TASK_STATUSES],
     default: "pending",
   })
   status!: TaskStatus;
