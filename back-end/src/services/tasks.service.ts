@@ -22,7 +22,7 @@ export class TasksService {
       where: { task: { id: task.id }, user: { id: userId } },
     });
     if (!collab) {
-      throw new ForbiddenError("You don't have access to this task");
+      throw new ForbiddenError("Você não tem acesso a esta tarefa");
     }
   }
 
@@ -32,7 +32,7 @@ export class TasksService {
       where: { task: { id: task.id }, user: { id: userId } },
     });
     if (!collab || collab.role !== "editor") {
-      throw new ForbiddenError("You don't have edit access to this task");
+      throw new ForbiddenError("Você não tem permissão de edição nesta tarefa");
     }
   }
 
@@ -43,7 +43,7 @@ export class TasksService {
 
     if (existingTask) {
       throw new ConflictError(
-        "Task with this name already exists for this user",
+        "Você já tem uma tarefa com esse nome",
       );
     }
 
@@ -62,7 +62,7 @@ export class TasksService {
     const owned = await TasksRepository.findByUserId(userId);
     const collaborations = await UserHasTasksRepository.find({
       where: { user: { id: userId } },
-      relations: { task: true },
+      relations: { task: { user: true, category: true } },
     });
 
     const byId = new Map<number, Task>();
@@ -76,7 +76,7 @@ export class TasksService {
   async getTaskById(id: number, userId: number): Promise<Task> {
     const task = await TasksRepository.findById(id);
     if (!task) {
-      throw new NotFoundError("Task not found");
+      throw new NotFoundError("Tarefa não encontrada");
     }
     await this.assertCanView(task, userId);
     return task;
@@ -89,7 +89,7 @@ export class TasksService {
   ): Promise<Task> {
     const task = await TasksRepository.findById(id);
     if (!task) {
-      throw new NotFoundError("Task not found");
+      throw new NotFoundError("Tarefa não encontrada");
     }
     await this.assertCanEdit(task, userId);
 
@@ -110,7 +110,7 @@ export class TasksService {
   ): Promise<Task> {
     const task = await TasksRepository.findById(id);
     if (!task) {
-      throw new NotFoundError("Task not found");
+      throw new NotFoundError("Tarefa não encontrada");
     }
     await this.assertCanEdit(task, userId);
 
@@ -121,10 +121,10 @@ export class TasksService {
   async deleteTask(id: number, userId: number): Promise<void> {
     const task = await TasksRepository.findById(id);
     if (!task) {
-      throw new NotFoundError("Task not found");
+      throw new NotFoundError("Tarefa não encontrada");
     }
     if (task.user.id !== userId) {
-      throw new ForbiddenError("Not your task");
+      throw new ForbiddenError("Esta tarefa não é sua");
     }
 
     await TasksRepository.softDelete(id);
@@ -132,39 +132,39 @@ export class TasksService {
 
   async addCollaborator(
     taskId: number,
-    collaboratorId: number,
+    email: string,
     role: string,
     ownerId: number,
   ): Promise<void> {
     const task = await TasksRepository.findById(taskId);
     if (!task) {
-      throw new NotFoundError("Task not found");
+      throw new NotFoundError("Tarefa não encontrada");
     }
     if (task.user.id !== ownerId) {
-      throw new ForbiddenError("Not your task");
+      throw new ForbiddenError("Esta tarefa não é sua");
     }
 
-    if (collaboratorId === ownerId) {
+    const collaboratorUser = await UsersRepository.findByEmail(email);
+    if (!collaboratorUser) {
+      throw new NotFoundError("Usuário não encontrado");
+    }
+
+    if (collaboratorUser.id === ownerId) {
       throw new BadRequestError(
-        "The owner already has full access to the task",
+        "O dono já tem acesso total à tarefa",
       );
     }
 
-    const collaboratorUser = await UsersRepository.findById(collaboratorId);
-    if (!collaboratorUser) {
-      throw new NotFoundError("Collaborator user not found");
-    }
-
     const existingCollaboration = await UserHasTasksRepository.findOne({
-      where: { task: { id: taskId }, user: { id: collaboratorId } },
+      where: { task: { id: taskId }, user: { id: collaboratorUser.id } },
     });
     if (existingCollaboration) {
-      throw new ConflictError("User is already a collaborator on this task");
+      throw new ConflictError("Este usuário já é colaborador da tarefa");
     }
 
     const collaboration = UserHasTasksRepository.create({
       task: { id: taskId },
-      user: { id: collaboratorId },
+      user: { id: collaboratorUser.id },
       role: role as CollaboratorRole,
     });
 
@@ -177,11 +177,10 @@ export class TasksService {
   ): Promise<UserHasTasks[]> {
     const task = await TasksRepository.findById(taskId);
     if (!task) {
-      throw new NotFoundError("Task not found");
+      throw new NotFoundError("Tarefa não encontrada");
     }
-    if (task.user.id !== userId) {
-      throw new ForbiddenError("Not your task");
-    }
+    // dono OU colaborador pode ver a lista (gerenciar é só do dono)
+    await this.assertCanView(task, userId);
 
     return await UserHasTasksRepository.find({
       where: { task: { id: taskId } },
@@ -196,17 +195,17 @@ export class TasksService {
   ): Promise<void> {
     const task = await TasksRepository.findById(taskId);
     if (!task) {
-      throw new NotFoundError("Task not found");
+      throw new NotFoundError("Tarefa não encontrada");
     }
     if (task.user.id !== ownerId) {
-      throw new ForbiddenError("Not your task");
+      throw new ForbiddenError("Esta tarefa não é sua");
     }
 
     const collaboration = await UserHasTasksRepository.findOne({
       where: { task: { id: taskId }, user: { id: collaboratorId } },
     });
     if (!collaboration) {
-      throw new NotFoundError("User is not a collaborator on this task");
+      throw new NotFoundError("Este usuário não é colaborador da tarefa");
     }
 
     await UserHasTasksRepository.remove(collaboration);

@@ -3,7 +3,7 @@ import { z } from "./registry.ts";
 
 export const collaboratorSchema = z
   .object({
-    userId: z.number().int().positive(),
+    email: z.string().email(),
     role: z.enum(COLLABORATOR_ROLES),
   })
   .openapi("Collaborator");

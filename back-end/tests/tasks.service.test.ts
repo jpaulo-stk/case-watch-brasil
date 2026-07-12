@@ -23,6 +23,7 @@ const collabRepo = {
 };
 const usersRepo = {
   findById: jest.fn<(...args: any[]) => any>(),
+  findByEmail: jest.fn<(...args: any[]) => any>(),
 };
 
 jest.unstable_mockModule("../src/repositories/tasks.repository.ts", () => ({
@@ -119,53 +120,54 @@ describe("TasksService", () => {
     });
   });
 
-  describe("addCollaborator", () => {
+  describe("addCollaborator (por email)", () => {
     it("NotFoundError se a task não existe", async () => {
       tasksRepo.findById.mockResolvedValue(null);
       await expect(
-        service.addCollaborator(10, other, "viewer", owner),
+        service.addCollaborator(10, "colab@x.com", "viewer", owner),
       ).rejects.toThrow(NotFoundError);
     });
 
     it("ForbiddenError se quem chama não é o dono", async () => {
       tasksRepo.findById.mockResolvedValue({ id: 10, user: { id: other } });
       await expect(
-        service.addCollaborator(10, 3, "viewer", owner),
+        service.addCollaborator(10, "colab@x.com", "viewer", owner),
       ).rejects.toThrow(ForbiddenError);
+    });
+
+    it("NotFoundError se o email não existe", async () => {
+      tasksRepo.findById.mockResolvedValue(ownedTask);
+      usersRepo.findByEmail.mockResolvedValue(null);
+      await expect(
+        service.addCollaborator(10, "naoexiste@x.com", "editor", owner),
+      ).rejects.toThrow(NotFoundError);
     });
 
     it("BadRequestError ao tentar adicionar o próprio dono", async () => {
       tasksRepo.findById.mockResolvedValue(ownedTask);
+      usersRepo.findByEmail.mockResolvedValue({ id: owner });
       await expect(
-        service.addCollaborator(10, owner, "editor", owner),
+        service.addCollaborator(10, "dono@x.com", "editor", owner),
       ).rejects.toThrow(BadRequestError);
-    });
-
-    it("NotFoundError se o usuário colaborador não existe", async () => {
-      tasksRepo.findById.mockResolvedValue(ownedTask);
-      usersRepo.findById.mockResolvedValue(null);
-      await expect(
-        service.addCollaborator(10, other, "editor", owner),
-      ).rejects.toThrow(NotFoundError);
     });
 
     it("ConflictError se já é colaborador", async () => {
       tasksRepo.findById.mockResolvedValue(ownedTask);
-      usersRepo.findById.mockResolvedValue({ id: other });
+      usersRepo.findByEmail.mockResolvedValue({ id: other });
       collabRepo.findOne.mockResolvedValue({ userId: other, taskId: 10 });
       await expect(
-        service.addCollaborator(10, other, "editor", owner),
+        service.addCollaborator(10, "colab@x.com", "editor", owner),
       ).rejects.toThrow(ConflictError);
     });
 
-    it("adiciona quando tudo é válido", async () => {
+    it("adiciona quando o email existe e tudo é válido", async () => {
       tasksRepo.findById.mockResolvedValue(ownedTask);
-      usersRepo.findById.mockResolvedValue({ id: other });
+      usersRepo.findByEmail.mockResolvedValue({ id: other });
       collabRepo.findOne.mockResolvedValue(null);
       collabRepo.create.mockReturnValue({ userId: other, taskId: 10 });
       collabRepo.save.mockResolvedValue({});
 
-      await service.addCollaborator(10, other, "editor", owner);
+      await service.addCollaborator(10, "colab@x.com", "editor", owner);
 
       expect(collabRepo.create).toHaveBeenCalledWith({
         task: { id: 10 },

@@ -18,7 +18,7 @@ export class CategoryService {
       user: { id: userId },
     });
     if (existingCategory) {
-      throw new ConflictError("Category with this name already exists");
+      throw new ConflictError("Você já tem uma categoria com esse nome");
     }
 
     const category = new Category();
@@ -35,10 +35,10 @@ export class CategoryService {
   ): Promise<Category> {
     const category = await CategoryRepository.findById(id);
     if (!category) {
-      throw new NotFoundError("Category not found");
+      throw new NotFoundError("Categoria não encontrada");
     }
     if (category.user.id !== userId) {
-      throw new ForbiddenError("Not your category");
+      throw new ForbiddenError("Esta categoria não é sua");
     }
 
     const duplicate = await CategoryRepository.findOneBy({
@@ -46,7 +46,7 @@ export class CategoryService {
       user: { id: userId },
     });
     if (duplicate && duplicate.id !== id) {
-      throw new ConflictError("Category with this name already exists");
+      throw new ConflictError("Você já tem uma categoria com esse nome");
     }
 
     category.name = name;
@@ -56,10 +56,10 @@ export class CategoryService {
   async deleteCategory(id: number, userId: number): Promise<void> {
     const category = await CategoryRepository.findById(id);
     if (!category) {
-      throw new NotFoundError("Category not found");
+      throw new NotFoundError("Categoria não encontrada");
     }
     if (category.user.id !== userId) {
-      throw new ForbiddenError("Not your category");
+      throw new ForbiddenError("Esta categoria não é sua");
     }
 
     await CategoryRepository.softDelete(id);

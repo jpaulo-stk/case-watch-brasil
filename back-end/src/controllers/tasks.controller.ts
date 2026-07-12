@@ -68,10 +68,10 @@ export class TasksController {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const { userId, role } = req.body;
+    const { email, role } = req.body;
     await tasksService.addCollaborator(
       Number(req.params.id),
-      userId,
+      email,
       role,
       req.user.id,
     );

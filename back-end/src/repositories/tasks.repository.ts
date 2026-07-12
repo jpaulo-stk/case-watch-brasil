@@ -7,6 +7,9 @@ export const TasksRepository = AppDataSource.getRepository(Task).extend({
   },
 
   findByUserId(userId: number): Promise<Task[]> {
-    return this.find({ where: { user: { id: userId } } });
+    return this.find({
+      where: { user: { id: userId } },
+      relations: { user: true, category: true },
+    });
   },
 });

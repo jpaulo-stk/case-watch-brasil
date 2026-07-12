@@ -6,9 +6,11 @@ import { categoryRoutes } from "./routes/categories.routes.ts";
 import { tasksRoutes } from "./routes/tasks.routes.ts";
 import swaggerUi from "swagger-ui-express";
 import { buildOpenApiDoc } from "./config/openapi.ts";
+import cors from "cors";
 
 const app: Express = express();
 
+app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(buildOpenApiDoc()));

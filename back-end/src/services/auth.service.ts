@@ -7,12 +7,12 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await UsersRepository.findByEmailWithPassword(email);
     if (!user) {
-      throw new UnauthorizedError("Invalid email or password");
+      throw new UnauthorizedError("Email ou senha inválidos");
     }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) {
-      throw new UnauthorizedError("Invalid email or password");
+      throw new UnauthorizedError("Email ou senha inválidos");
     }
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
