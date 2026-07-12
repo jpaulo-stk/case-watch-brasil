@@ -1,0 +1,74 @@
+service: case-watch-api
+
+frameworkVersion: "3"
+
+# Load .env into process.env before variable resolution so ${env:...} works.
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${env:AWS_REGION, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  # New AWS accounts cap Lambda memory at 512MB until the quota is raised.
+  memorySize: 512
+  # These env vars are read from your local .env at deploy time (via
+  # serverless-dotenv-plugin) and injected into the Lambda's environment.
+  environment:
+    DB_HOST: ${env:DB_HOST}
+    DB_PORT: ${env:DB_PORT}
+    DB_USER: ${env:DB_USER}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    DB_NAME: ${env:DB_NAME}
+    DB_SSL: ${env:DB_SSL, 'true'}
+    JWT_SECRET: ${env:JWT_SECRET}
+    NODE_OPTIONS: "--enable-source-maps"
+
+functions:
+  api:
+    handler: src/lambda.handler
+    timeout: 29 # API Gateway hard limit
+    events:
+      # Catch-all: every method + path is forwarded to the Express app.
+      - httpApi: "*"
+
+plugins:
+  - serverless-esbuild
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    target: node20
+    platform: node
+    # cjs + .cjs keeps the handler unambiguously CommonJS even though the
+    # source project is "type": "module". If the deployed handler ever errors
+    # with an ESM/require issue, switch format to 'esm' + outputFileExtension '.mjs'.
+    format: cjs
+    outputFileExtension: .cjs
+    # TypeORM references many optional DB drivers via require(); we only use pg
+    # (which bundles fine). Mark all the others external so esbuild doesn't try
+    # to resolve them — TypeORM wraps them in try/catch at runtime.
+    external:
+      - pg-native
+      - pg-query-stream
+      - mysql
+      - mysql2
+      - better-sqlite3
+      - sqlite3
+      - sql.js
+      - oracledb
+      - mssql
+      - mongodb
+      - redis
+      - ioredis
+      - expo-sqlite
+      - react-native-sqlite-storage
+      - "@sap/hana-client"
+      - hana-client
+      - hdb-pool
+      - "@google-cloud/spanner"
+      - typeorm-aurora-data-api-driver
+      - "@nativescript/core"
+      - nativescript-sqlite

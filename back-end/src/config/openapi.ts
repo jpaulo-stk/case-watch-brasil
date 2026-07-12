@@ -48,6 +48,16 @@ registry.registerPath({
 });
 registry.registerPath({
   method: "get",
+  path: "/users/search",
+  tags: ["Users"],
+  security: bearer,
+  request: { query: z.object({ q: z.string() }) },
+  responses: {
+    200: { description: "Usuários que casam com o email (autocomplete)" },
+  },
+});
+registry.registerPath({
+  method: "get",
   path: "/users/{id}",
   tags: ["Users"],
   security: bearer,

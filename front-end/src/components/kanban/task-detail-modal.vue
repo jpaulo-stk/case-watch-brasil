@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import BaseModal from "../base/base-modal.vue";
-import BaseInput from "../base/base-input.vue";
 import BaseButton from "../base/base-button.vue";
 import * as tasksService from "../../services/tasks.service";
+import * as usersService from "../../services/users.service";
 import { useAuthStore } from "../../stores/auth";
 import { statusLabels, roleLabels } from "../../utils/labels";
 import { isEmail } from "../../utils/validation";
 import { formatDate } from "../../utils/format";
 import type { Task, Collaborator, CollaboratorRole } from "../../types/api";
+import type { UserSummary } from "../../services/users.service";
 
 const props = defineProps<{ task: Task | null }>();
 const emit = defineEmits<{
@@ -24,36 +25,53 @@ const newRole = ref<CollaboratorRole>("viewer");
 const collabError = ref("");
 const adding = ref(false);
 
+const suggestions = ref<UserSummary[]>([]);
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
+
 const isOwner = computed(
   () => !!props.task && props.task.user?.id === auth.user?.id,
 );
-
-// papel do usuário atual quando ele é colaborador (não dono)
 const myRole = computed<CollaboratorRole | null>(() => {
   if (isOwner.value) return null;
   return (
     collaborators.value.find((c) => c.userId === auth.user?.id)?.role ?? null
   );
 });
-
-// dono e colaborador editor podem editar (viewer não)
 const canEdit = computed(() => isOwner.value || myRole.value === "editor");
 
 watch(
   () => props.task,
   async (task) => {
-    collaborators.value = [];
+    collaborators.value = task
+      ? await tasksService.getCollaborators(task.id)
+      : [];
     newEmail.value = "";
     collabError.value = "";
-    if (task) {
-      try {
-        collaborators.value = await tasksService.getCollaborators(task.id);
-      } catch {
-        collaborators.value = [];
-      }
-    }
+    suggestions.value = [];
   },
 );
+
+function onEmailInput() {
+  collabError.value = "";
+  if (searchTimer) clearTimeout(searchTimer);
+  const q = newEmail.value.trim();
+  if (q.length < 2) {
+    suggestions.value = [];
+    return;
+  }
+  searchTimer = setTimeout(async () => {
+    try {
+      suggestions.value = await usersService.searchUsers(q);
+    } catch {
+      suggestions.value = [];
+    }
+  }, 300);
+}
+
+function selectSuggestion(u: UserSummary) {
+  newEmail.value = u.email;
+  suggestions.value = [];
+}
 
 async function addCollab() {
   collabError.value = "";
@@ -76,6 +94,7 @@ async function addCollab() {
     );
     collaborators.value = await tasksService.getCollaborators(props.task.id);
     newEmail.value = "";
+    suggestions.value = [];
   } catch (e: unknown) {
     const err = e as { response?: { data?: { message?: string } } };
     collabError.value =
@@ -122,7 +141,6 @@ async function del() {
         </span>
       </div>
 
-      <!-- colaborador: explica o papel e o que pode fazer -->
       <div
         v-if="!isOwner"
         class="rounded-md bg-indigo-50 p-3 text-sm text-indigo-900"
@@ -173,16 +191,34 @@ async function del() {
           </li>
         </ul>
 
-        <!-- gerenciar colaboradores: só o dono -->
         <div v-if="isOwner" class="mt-3">
           <div class="flex items-end gap-2">
-            <div class="flex-1">
-              <BaseInput
+            <div class="relative flex-1">
+              <span class="mb-1 block text-sm font-medium text-slate-700">
+                Email do colaborador
+              </span>
+              <input
                 v-model="newEmail"
                 type="email"
-                label="Email do colaborador"
                 placeholder="colega@exemplo.com"
+                autocomplete="off"
+                class="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                @input="onEmailInput"
               />
+              <ul
+                v-if="suggestions.length"
+                class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg"
+              >
+                <li
+                  v-for="u in suggestions"
+                  :key="u.id"
+                  class="cursor-pointer px-3 py-2 text-sm hover:bg-slate-50"
+                  @click="selectSuggestion(u)"
+                >
+                  <span class="font-medium text-slate-700">{{ u.name }}</span>
+                  <span class="text-slate-400"> — {{ u.email }}</span>
+                </li>
+              </ul>
             </div>
             <select
               v-model="newRole"

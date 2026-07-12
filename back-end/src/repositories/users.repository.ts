@@ -20,4 +20,13 @@ export const UsersRepository = AppDataSource.getRepository(User).extend({
   findByUsername(username: string): Promise<User | null> {
     return this.findOne({ where: { username } });
   },
+
+  // busca por email parcial (autocomplete de colaboradores)
+  searchByEmail(query: string): Promise<User[]> {
+    return this.createQueryBuilder("user")
+      .where("user.email ILIKE :q", { q: `%${query}%` })
+      .orderBy("user.email", "ASC")
+      .limit(8)
+      .getMany();
+  },
 });

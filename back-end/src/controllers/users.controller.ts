@@ -10,11 +10,24 @@ export class UsersController {
     res.status(201).json(rest);
   }
 
+  async search(req: Request, res: Response) {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const uid = req.user.id;
+    const users = await userService.search(String(req.query.q ?? ""));
+    // devolve só o essencial e exclui o próprio usuário
+    const result = users
+      .filter((u) => u.id !== uid)
+      .map((u) => ({ id: u.id, name: u.name, email: u.email }));
+    res.status(200).json(result);
+  }
+
   async findById(req: Request, res: Response) {
     const user = await userService.findById(Number(req.params.id));
 
     if (!user) {
-      throw new NotFoundError("User not found");
+      throw new NotFoundError("Usuário não encontrado");
     }
 
     const { passwordHash, ...rest } = user;

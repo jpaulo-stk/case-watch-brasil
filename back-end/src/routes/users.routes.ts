@@ -5,9 +5,12 @@ import { validateBody } from "../middlewares/validate.middleware.ts";
 import { createUserSchema, updateUserSchema } from "../schemas/user.schema.ts";
 
 const router = Router();
-const { create, update, delete: deleteUser, findById } = new UsersController();
+const { create, update, delete: deleteUser, findById, search } =
+  new UsersController();
 
 router.post("/", validateBody(createUserSchema), (req, res) => create(req, res));
+// antes de "/:id" pra não colidir
+router.get("/search", authenticate, (req, res) => search(req, res));
 router.put("/:id", authenticate, validateBody(updateUserSchema), (req, res) =>
   update(req, res),
 );

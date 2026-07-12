@@ -1,6 +1,3 @@
-// Tipos das respostas da API (espelham as entities do back-end).
-// Dá pra gerar isso do OpenAPI com `openapi-typescript` depois.
-
 export type TaskStatus = "pending" | "in_progress" | "review" | "done";
 export type CollaboratorRole = "viewer" | "editor";
 

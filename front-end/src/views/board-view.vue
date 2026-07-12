@@ -38,7 +38,6 @@ async function load() {
   grouped.value = g;
 }
 
-// otimista: o card já mudou de coluna; confirma no back e reverte se falhar
 async function onMove(payload: { taskId: number; status: TaskStatus }) {
   try {
     await tasksService.updateStatus(payload.taskId, payload.status);
@@ -54,7 +53,7 @@ function openCreate() {
 
 function openEdit(task: Task) {
   editingTask.value = task;
-  selected.value = null; // fecha o detalhe e abre o form em modo edição
+  selected.value = null;
   formOpen.value = true;
 }
 

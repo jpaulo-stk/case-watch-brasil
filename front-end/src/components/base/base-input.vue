@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// v-model = prop `modelValue` + emit `update:modelValue` (o "value + onChange" do React)
 defineProps<{
   modelValue: string;
   label?: string;
@@ -26,8 +25,12 @@ const emit = defineEmits<{ (e: "update:modelValue", value: string): void }>();
           ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
           : 'border-slate-300 focus:border-indigo-500 focus:ring-indigo-200'
       "
-      @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @input="
+        emit('update:modelValue', ($event.target as HTMLInputElement).value)
+      "
     />
-    <span v-if="error" class="mt-1 block text-xs text-red-600">{{ error }}</span>
+    <span v-if="error" class="mt-1 block text-xs text-red-600">{{
+      error
+    }}</span>
   </label>
 </template>

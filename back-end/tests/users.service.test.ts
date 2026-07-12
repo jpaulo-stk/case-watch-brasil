@@ -18,7 +18,7 @@ const bcryptMock = {
 jest.unstable_mockModule("../src/repositories/users.repository.ts", () => ({
   UsersRepository: usersRepo,
 }));
-jest.unstable_mockModule("bcrypt", () => ({ default: bcryptMock }));
+jest.unstable_mockModule("bcryptjs", () => ({ default: bcryptMock }));
 
 const { UsersService } = await import("../src/services/users.service.ts");
 

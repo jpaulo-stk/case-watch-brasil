@@ -1,5 +1,5 @@
 import { UsersRepository } from "../repositories/users.repository.ts";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { UnauthorizedError } from "../errors/http-errors.ts";
 

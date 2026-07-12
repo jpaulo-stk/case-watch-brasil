@@ -19,7 +19,6 @@ const message = ref("");
 const error = ref("");
 const loading = ref(false);
 
-// ao abrir, preenche com os dados atuais (telefone já mascarado)
 watch(
   () => props.open,
   (isOpen) => {
@@ -57,7 +56,6 @@ async function onSubmit() {
       name: res.data.name,
       email: res.data.email,
       username: res.data.username,
-      // envia só os dígitos (não a máscara)
       phone: phoneDigits(res.data.phone ?? "") || undefined,
     });
     auth.setUser(updated);
@@ -75,8 +73,17 @@ async function onSubmit() {
   <BaseModal :open="open" title="Meu perfil" @close="emit('close')">
     <form class="space-y-3" @submit.prevent="onSubmit">
       <BaseInput v-model="form.name" label="Nome" :error="errors.name" />
-      <BaseInput v-model="form.email" type="email" label="Email" :error="errors.email" />
-      <BaseInput v-model="form.username" label="Usuário" :error="errors.username" />
+      <BaseInput
+        v-model="form.email"
+        type="email"
+        label="Email"
+        :error="errors.email"
+      />
+      <BaseInput
+        v-model="form.username"
+        label="Usuário"
+        :error="errors.username"
+      />
       <BaseInput
         :model-value="form.phone"
         label="Telefone"

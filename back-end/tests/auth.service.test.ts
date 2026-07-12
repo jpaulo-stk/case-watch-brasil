@@ -10,7 +10,7 @@ const jwtMock = { sign: jest.fn<(...args: any[]) => any>() };
 jest.unstable_mockModule("../src/repositories/users.repository.ts", () => ({
   UsersRepository: usersRepo,
 }));
-jest.unstable_mockModule("bcrypt", () => ({ default: bcryptMock }));
+jest.unstable_mockModule("bcryptjs", () => ({ default: bcryptMock }));
 jest.unstable_mockModule("jsonwebtoken", () => ({ default: jwtMock }));
 
 const { AuthService } = await import("../src/services/auth.service.ts");

@@ -1,7 +1,5 @@
-# Documento de handoff local — NÃO versionar
 PROGRESS.md
 
-# Segredos (por segurança, mesmo que cada subprojeto tenha o seu)
 .env
 .env.*
 !.env.example

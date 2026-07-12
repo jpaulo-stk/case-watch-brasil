@@ -33,7 +33,6 @@ const deadline = ref("");
 const categoryId = ref<number | null>(null);
 const errors = ref<Record<string, string>>({});
 
-// ao abrir: se tem task -> edição (pré-preenche); senão -> criação (limpa)
 watch(
   () => props.open,
   (isOpen) => {
@@ -95,7 +94,9 @@ function submit() {
         />
       </label>
       <label class="block">
-        <span class="mb-1 block text-sm font-medium text-slate-700">Categoria</span>
+        <span class="mb-1 block text-sm font-medium text-slate-700"
+          >Categoria</span
+        >
         <select
           v-model="categoryId"
           class="w-full rounded-md border px-3 py-2 text-slate-800"
@@ -113,8 +114,12 @@ function submit() {
         Crie uma categoria primeiro (aba Categorias).
       </p>
       <div class="flex justify-end gap-2 pt-2">
-        <BaseButton variant="secondary" @click="emit('close')">Cancelar</BaseButton>
-        <BaseButton @click="submit">{{ isEdit ? "Salvar" : "Criar" }}</BaseButton>
+        <BaseButton variant="secondary" @click="emit('close')"
+          >Cancelar</BaseButton
+        >
+        <BaseButton @click="submit">{{
+          isEdit ? "Salvar" : "Criar"
+        }}</BaseButton>
       </div>
     </div>
   </BaseModal>

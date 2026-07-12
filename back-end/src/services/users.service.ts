@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { UsersRepository } from "../repositories/users.repository.ts";
 import type { CreateUserDTO } from "../schemas/user.schema.ts";
 import { ConflictError, NotFoundError } from "../errors/http-errors.ts";
@@ -33,6 +33,12 @@ export class UsersService {
 
   async findById(id: number): Promise<User | null> {
     return UsersRepository.findOneBy({ id });
+  }
+
+  async search(query: string): Promise<User[]> {
+    const q = query.trim();
+    if (q.length < 2) return []; // evita busca vazia/enumeração
+    return UsersRepository.searchByEmail(q);
   }
 
   async update(id: number, data: Partial<CreateUserDTO>): Promise<User> {

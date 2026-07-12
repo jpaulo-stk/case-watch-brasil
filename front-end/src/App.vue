@@ -18,7 +18,7 @@ function logout() {
   <div class="min-h-screen bg-slate-50 text-slate-800">
     <nav
       v-if="auth.isAuthenticated"
-      class="flex items-center gap-4 border-b border-slate-200 bg-white px-6 py-3"
+      class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 bg-white px-6 py-3"
     >
       <RouterLink to="/" class="text-sm text-slate-600 hover:text-slate-900">
         Tarefas
