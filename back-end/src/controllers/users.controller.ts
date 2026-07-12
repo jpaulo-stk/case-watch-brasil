@@ -16,7 +16,6 @@ export class UsersController {
     }
     const uid = req.user.id;
     const users = await userService.search(String(req.query.q ?? ""));
-    // devolve só o essencial e exclui o próprio usuário
     const result = users
       .filter((u) => u.id !== uid)
       .map((u) => ({ id: u.id, name: u.name, email: u.email }));

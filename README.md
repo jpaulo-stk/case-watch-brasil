@@ -26,6 +26,8 @@ Monorepo com dois pacotes:
 - [Exemplos de uso](#exemplos-de-uso)
 - [Autenticação e controle de acesso](#autenticação-e-controle-de-acesso)
 - [Testes](#testes)
+- [Observabilidade](#observabilidade)
+- [Deploy (AWS Lambda)](#deploy-aws-lambda)
 - [Estrutura de pastas](#estrutura-de-pastas)
 - [Decisões técnicas](#decisões-técnicas)
 - [Status e próximos passos](#status-e-próximos-passos)
@@ -53,11 +55,13 @@ Monorepo com dois pacotes:
 | **TypeORM** | ORM + migrations |
 | **PostgreSQL 16** | banco relacional |
 | **JWT** (`jsonwebtoken`) | autenticação |
-| **bcrypt** | hash de senha |
+| **bcryptjs** | hash de senha (JS puro — roda no bundle da Lambda, sem binário nativo) |
 | **Zod** + **@asteasolutions/zod-to-openapi** | validação de entrada **e** geração do OpenAPI (fonte única) |
 | **Swagger UI** | documentação interativa em `/docs` |
 | **Jest** + **ts-jest** | testes unitários |
 | **tsx** | runtime de dev |
+| **Serverless Framework v3** + **serverless-esbuild** | deploy em AWS Lambda |
+| **serverless-http** | adapta o Express ao handler da Lambda |
 
 ### Front-end
 | Ferramenta | Uso |
@@ -190,6 +194,7 @@ Arquivo `back-end/.env`:
 | `DB_USER` | usuário | `postgres` |
 | `DB_PASSWORD` | senha | `sua_senha` |
 | `DB_NAME` | banco | `case_watch` |
+| `DB_SSL` | `true` para Postgres gerenciado na nuvem (Neon/RDS) — exigido no deploy da Lambda; `false`/vazio no local | `false` |
 | `JWT_SECRET` | segredo para assinar o JWT | `uma_string_longa_aleatoria` |
 | `PORT` | (opcional) porta da API | `3000` |
 
@@ -271,7 +276,7 @@ curl -X POST http://localhost:3000/tasks/1/collaborators \
   - **Dono** — tudo (editar, mudar status, excluir, gerenciar colaboradores).
   - **Colaborador `editor`** — ver e editar/mover a tarefa.
   - **Colaborador `viewer`** — apenas ver.
-- A senha é hasheada com **bcrypt** e **nunca** retorna nas respostas.
+- A senha é hasheada com **bcryptjs** e **nunca** retorna nas respostas.
 
 ---
 
@@ -311,6 +316,86 @@ banco — com a duração de cada etapa (ótimo para achar gargalos).
 
 ---
 
+## Deploy (AWS Lambda)
+
+A API roda em **ambiente serverless** na AWS. O mesmo `app.ts` do Express é reaproveitado —
+não há código duplicado entre "rodar local" e "rodar na Lambda".
+
+### Arquitetura serverless
+
+```
+Cliente → API Gateway (HTTP API, rota catch-all)
+        → AWS Lambda (Node.js 20) — Express embrulhado por serverless-http
+        → PostgreSQL gerenciado (Neon, com SSL)
+```
+
+- **`src/lambda.ts`** — ponto de entrada da Lambda: embrulha o `app` com `serverless-http`
+  e inicializa o TypeORM **uma vez por container**, reaproveitando a conexão entre
+  invocações "quentes" (connection pooling).
+- **API Gateway (HTTP API)** com rota *catch-all* (`ANY *`) encaminha toda requisição
+  para a mesma função — o roteamento continua sendo do Express.
+- **Neon** (Postgres gerenciado) como banco, acessível de qualquer lugar via SSL.
+
+### Pré-requisitos
+
+- Conta **AWS** + usuário **IAM** com permissão de deploy (para um case, `AdministratorAccess`
+  resolve; em produção escoparia para CloudFormation/Lambda/API Gateway/IAM/S3/Logs).
+- **AWS CLI** configurada: `aws configure` (Access Key + Secret do usuário IAM + região).
+- Um **Postgres gerenciado** (ex.: [Neon](https://neon.tech) — free tier) com a *connection string*.
+
+### Passos
+
+```bash
+cd back-end
+
+# 1. Aponte o .env para o banco na nuvem (Neon) com SSL:
+#    DB_HOST=<host do Neon>   DB_USER=<...>   DB_PASSWORD=<...>
+#    DB_NAME=<...>            DB_PORT=5432    DB_SSL=true
+#    JWT_SECRET=<segredo forte>
+
+# 2. Cria o schema no banco da nuvem
+yarn migration:run
+
+# 3. Deploy (empacota com esbuild e sobe via CloudFormation)
+npx serverless deploy
+```
+
+Ao final, o Serverless imprime a **URL** do endpoint:
+
+```
+endpoint: ANY - https://wabn5zl24h.execute-api.us-east-1.amazonaws.com
+```
+
+> **Demo ao vivo:** `https://wabn5zl24h.execute-api.us-east-1.amazonaws.com`
+> (o banco Neon "escala para zero" quando ocioso, então a **primeira** requisição pode
+> levar alguns segundos para "acordar").
+
+### Comandos úteis
+
+```bash
+npx serverless info          # URL + infos do stack
+npx serverless logs -f api   # logs da função (CloudWatch)
+npx serverless deploy        # redeploy após mudanças
+npx serverless remove        # derruba todos os recursos da AWS
+```
+
+### Detalhes que fizeram diferença
+
+Documentados porque "o diabo mora nos detalhes" — pontos que quebram um deploy serverless de
+TypeORM e como foram resolvidos:
+
+- **`bcrypt` → `bcryptjs`** — `bcrypt` é um módulo **nativo** (binário `.node`); o bundle do
+  esbuild não o inclui e ele nem rodaria no Linux da Lambda. `bcryptjs` (JS puro) resolve.
+- **Entities explícitas** — o `data-source` importa as classes de entidade diretamente (em vez
+  de um *glob* `*.ts`), pois globs não sobrevivem ao *bundling*.
+- **Drivers opcionais da TypeORM** — a TypeORM referencia via `require()` vários drivers que não
+  usamos (mysql, oracle, expo-sqlite, ...). Eles são marcados como `external` no esbuild para o
+  bundle não tentar resolvê-los.
+- **SSL** — o `data-source` habilita SSL quando `DB_SSL=true` (exigido pelo Neon/RDS).
+- **`memorySize: 512`** — contas AWS novas têm cota inicial de memória de Lambda em 512 MB.
+
+---
+
 ## Estrutura de pastas
 
 ```
@@ -324,8 +409,9 @@ back-end/src/
 ├─ middlewares/    # authenticate, validateBody, errorHandler
 ├─ errors/         # classes de erro HTTP (Conflict, NotFound, ...)
 ├─ migrations/     # migrations do banco
-├─ app.ts          # configuração do Express
-└─ server.ts       # entry point (sobe a porta)
+├─ app.ts          # configuração do Express (reaproveitado local e na Lambda)
+├─ server.ts       # entry point local (sobe a porta)
+└─ lambda.ts       # entry point serverless (handler da Lambda)
 
 front-end/src/
 ├─ views/          # telas (login, board, categorias, relatórios)
@@ -355,8 +441,9 @@ front-end/src/
 **Implementado:** CRUD completo, autenticação JWT + controle de acesso, colaboração com papéis,
 validação (Zod), documentação OpenAPI/Swagger, testes unitários (Jest), **observabilidade**
 (OpenTelemetry + Jaeger), **Docker** (`docker compose up` sobe API + Postgres + Jaeger),
+**deploy em AWS Lambda** (API Gateway + Lambda + Postgres gerenciado no Neon),
 front-end em Vue + Tailwind.
 
 **Planejado (próximos passos):**
-- Deploy em **AWS Lambda** (a arquitetura já está preparada — `app.ts` desacoplado).
 - **CI** (GitHub Actions) rodando testes e type-check a cada push.
+- Hospedar o **front-end** (Vercel/Netlify) apontando para a API na Lambda.

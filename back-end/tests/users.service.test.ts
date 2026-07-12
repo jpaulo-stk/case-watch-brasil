@@ -60,7 +60,6 @@ describe("UsersService", () => {
 
       await service.create(validInput);
 
-      // a senha crua vira hash antes de salvar (nunca vai crua pro banco)
       expect(bcryptMock.hash).toHaveBeenCalledWith("secret123", 10);
       expect(usersRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ passwordHash: "hashed-pw" }),
@@ -80,9 +79,9 @@ describe("UsersService", () => {
     it("ConflictError se o novo email já está em uso", async () => {
       usersRepo.findById.mockResolvedValue({ id: 1, email: "old@x.com" });
       usersRepo.findByEmail.mockResolvedValue({ id: 2 });
-      await expect(
-        service.update(1, { email: "novo@x.com" }),
-      ).rejects.toThrow(ConflictError);
+      await expect(service.update(1, { email: "novo@x.com" })).rejects.toThrow(
+        ConflictError,
+      );
     });
 
     it("atualiza e salva quando ok", async () => {

@@ -6,7 +6,6 @@ import { z } from "zod";
 
 extendZodWithOpenApi(z);
 
-// Mensagens de validação em português (para toda a API).
 z.setErrorMap((issue, ctx) => {
   switch (issue.code) {
     case z.ZodIssueCode.invalid_type:

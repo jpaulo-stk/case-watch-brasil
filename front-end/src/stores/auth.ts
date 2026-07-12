@@ -26,7 +26,6 @@ export const useAuthStore = defineStore("auth", () => {
     localStorage.removeItem("user");
   }
 
-  // atualiza o usuário logado (ex.: depois de editar o perfil)
   function setUser(u: User) {
     user.value = u;
     localStorage.setItem("user", JSON.stringify(u));

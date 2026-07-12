@@ -42,9 +42,7 @@ export class TasksService {
     });
 
     if (existingTask) {
-      throw new ConflictError(
-        "Você já tem uma tarefa com esse nome",
-      );
+      throw new ConflictError("Você já tem uma tarefa com esse nome");
     }
 
     const task = TasksRepository.create({
@@ -150,9 +148,7 @@ export class TasksService {
     }
 
     if (collaboratorUser.id === ownerId) {
-      throw new BadRequestError(
-        "O dono já tem acesso total à tarefa",
-      );
+      throw new BadRequestError("O dono já tem acesso total à tarefa");
     }
 
     const existingCollaboration = await UserHasTasksRepository.findOne({
@@ -179,7 +175,6 @@ export class TasksService {
     if (!task) {
       throw new NotFoundError("Tarefa não encontrada");
     }
-    // dono OU colaborador pode ver a lista (gerenciar é só do dono)
     await this.assertCanView(task, userId);
 
     return await UserHasTasksRepository.find({

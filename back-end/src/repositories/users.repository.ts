@@ -21,7 +21,6 @@ export const UsersRepository = AppDataSource.getRepository(User).extend({
     return this.findOne({ where: { username } });
   },
 
-  // busca por email parcial (autocomplete de colaboradores)
   searchByEmail(query: string): Promise<User[]> {
     return this.createQueryBuilder("user")
       .where("user.email ILIKE :q", { q: `%${query}%` })
