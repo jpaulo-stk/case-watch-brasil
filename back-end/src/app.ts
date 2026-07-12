@@ -9,6 +9,11 @@ import cors from "cors";
 
 const app: Express = express();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://case-watch-brasil-tasks-manager.vercel.app",
+];
+
 function getRequestOrigin(req: express.Request) {
   const protocolHeader = req.get("x-forwarded-proto") ?? req.protocol;
   const protocol = protocolHeader.split(",")[0]?.trim() || req.protocol;
@@ -17,7 +22,26 @@ function getRequestOrigin(req: express.Request) {
   return `${protocol}://${host}`;
 }
 
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)
+      ) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    },
+  }),
+);
 app.use(express.json());
 
 app.get(["/docs", "/docs/"], (_req, res) => {
