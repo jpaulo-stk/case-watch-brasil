@@ -26,9 +26,11 @@ const byStatus = computed(() => {
   return acc;
 });
 
+// Excel em pt-BR usa ";" como separador de lista, então exportamos com ";".
+// Células com ";", aspas ou quebra de linha são envolvidas em aspas (RFC 4180).
 function csvCell(value: string): string {
   const s = String(value ?? "");
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 function exportCsv() {
@@ -52,7 +54,7 @@ function exportCsv() {
     formatDate(t.createdAt),
   ]);
   const csv = [headers, ...rows]
-    .map((r) => r.map(csvCell).join(","))
+    .map((r) => r.map(csvCell).join(";"))
     .join("\n");
 
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
