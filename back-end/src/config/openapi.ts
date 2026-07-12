@@ -220,7 +220,7 @@ registry.registerPath({
   },
 });
 
-export function buildOpenApiDoc() {
+export function buildOpenApiDoc(serverUrl = "http://localhost:3000") {
   const generator = new OpenApiGeneratorV3(registry.definitions);
   return generator.generateDocument({
     openapi: "3.0.0",
@@ -229,6 +229,6 @@ export function buildOpenApiDoc() {
       version: "1.0.0",
       description: "API de gerenciamento de tarefas com colaboração.",
     },
-    servers: [{ url: "http://localhost:3000" }],
+    servers: [{ url: serverUrl }],
   });
 }
