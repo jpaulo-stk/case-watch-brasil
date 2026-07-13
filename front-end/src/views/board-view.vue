@@ -115,6 +115,7 @@ onMounted(async () => {
       @close="selected = null"
       @deleted="onDeleted"
       @edit="openEdit"
+      @moved="load"
     />
   </div>
 </template>

@@ -8,7 +8,12 @@ import { useAuthStore } from "../../stores/auth";
 import { statusLabels, roleLabels } from "../../utils/labels";
 import { isEmail } from "../../utils/validation";
 import { formatDate } from "../../utils/format";
-import type { Task, Collaborator, CollaboratorRole } from "../../types/api";
+import type {
+  Task,
+  Collaborator,
+  CollaboratorRole,
+  TaskStatus,
+} from "../../types/api";
 import type { UserSummary } from "../../services/users.service";
 
 const props = defineProps<{ task: Task | null }>();
@@ -16,6 +21,7 @@ const emit = defineEmits<{
   (e: "close"): void;
   (e: "deleted"): void;
   (e: "edit", task: Task): void;
+  (e: "moved"): void;
 }>();
 
 const auth = useAuthStore();
@@ -27,6 +33,11 @@ const adding = ref(false);
 
 const suggestions = ref<UserSummary[]>([]);
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
+
+const statuses: TaskStatus[] = ["pending", "in_progress", "review", "done"];
+const currentStatus = ref<TaskStatus>();
+const moving = ref(false);
+const moveError = ref("");
 
 const isOwner = computed(
   () => !!props.task && props.task.user?.id === auth.user?.id,
@@ -48,8 +59,25 @@ watch(
     newEmail.value = "";
     collabError.value = "";
     suggestions.value = [];
+    currentStatus.value = task?.status;
+    moveError.value = "";
   },
 );
+
+async function moveTo(status: TaskStatus) {
+  if (!props.task || status === currentStatus.value || moving.value) return;
+  moving.value = true;
+  moveError.value = "";
+  try {
+    await tasksService.updateStatus(props.task.id, status);
+    currentStatus.value = status;
+    emit("moved");
+  } catch {
+    moveError.value = "Não foi possível mover a tarefa";
+  } finally {
+    moving.value = false;
+  }
+}
 
 function onEmailInput() {
   collabError.value = "";
@@ -128,7 +156,7 @@ async function del() {
         <span
           class="inline-block rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600"
         >
-          {{ statusLabels[task.status] }}
+          {{ statusLabels[currentStatus ?? task.status] }}
         </span>
         <span class="text-xs text-slate-500">
           Dono:
@@ -139,6 +167,30 @@ async function del() {
         <span v-if="task.deadline" class="text-xs text-amber-700">
           📅 {{ formatDate(task.deadline) }}
         </span>
+      </div>
+
+      <div v-if="canEdit">
+        <h3 class="mb-2 text-sm font-semibold text-slate-700">Mover para</h3>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="s in statuses"
+            :key="s"
+            type="button"
+            :disabled="moving || s === currentStatus"
+            class="rounded-md border px-3 py-1.5 text-sm font-medium transition"
+            :class="
+              s === currentStatus
+                ? 'border-indigo-600 bg-indigo-600 text-white'
+                : 'border-slate-300 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50 disabled:opacity-50'
+            "
+            @click="moveTo(s)"
+          >
+            {{ statusLabels[s] }}
+          </button>
+        </div>
+        <p v-if="moveError" class="mt-1 text-xs text-red-600">
+          {{ moveError }}
+        </p>
       </div>
 
       <div

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import draggable from "vuedraggable";
+import { ref, onBeforeUnmount } from "vue";
 import TaskCard from "./task-card.vue";
 import type { Task, TaskStatus } from "../../types/api";
 
@@ -13,6 +14,16 @@ const emit = defineEmits<{
   (e: "move", payload: { taskId: number; status: TaskStatus }): void;
   (e: "select", task: Task): void;
 }>();
+
+const coarsePointer = window.matchMedia("(pointer: coarse)");
+const dndDisabled = ref(coarsePointer.matches);
+const onPointerChange = (e: MediaQueryListEvent) => {
+  dndDisabled.value = e.matches;
+};
+coarsePointer.addEventListener("change", onPointerChange);
+onBeforeUnmount(() =>
+  coarsePointer.removeEventListener("change", onPointerChange),
+);
 
 function onChange(evt: any) {
   if (evt.added) {
@@ -28,6 +39,7 @@ function onChange(evt: any) {
     </h3>
     <draggable
       :list="tasks"
+      :disabled="dndDisabled"
       group="tasks"
       item-key="id"
       class="flex min-h-4 flex-col gap-2"
